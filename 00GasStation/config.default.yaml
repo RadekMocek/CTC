@@ -5,7 +5,7 @@ cars:
   shared_queue_length_max: 20
 stations:
   gas:
-    count: 2
+    count: 4
     serve_time_min: 2
     serve_time_max: 5
     queue_length_max: 5
