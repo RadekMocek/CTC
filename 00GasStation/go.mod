@@ -1,4 +1,4 @@
-module RadekMocek/CTC/GasStation
+module RadekMocek/CTC/00GasStation
 
 go 1.21
 
