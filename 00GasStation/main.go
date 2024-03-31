@@ -3,16 +3,22 @@ package main
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
-var mainWG sync.WaitGroup
+var globalWG sync.WaitGroup
 
 // Spawn `nCars` of cars in intervals between `minTime` and `maxTime`; add them to sharedQueue `sq` if there is space; if not, wait (block)
 func carSpawner(nCars int, minTime int, maxTime int, sq *sharedQueue) {
+	var c car
 	for i := 0; i < nCars; i++ {
 		randSleepExcl(minTime, maxTime)
-		fmt.Println("Car with id=", i, "wants to enter the shared queue.")
-		sq.queue <- &car{i, randFuelType()}
+		c = car{}
+		c.id = i
+		c.fuelType = randFuelType()
+		//fmt.Println("Car id=", c.id, "wants to enter the shared queue.")
+		sq.queue <- &c
+		c.sharedQueueEnteredTime = time.Now()
 	}
 }
 
@@ -21,7 +27,8 @@ func getBestIndex(specificStands []*standOrRegister) int {
 	var tempValue int
 	// If all of the stands are full, driver chooses the first one; they dont know which stand will be free the first
 	bestIndex := 0
-	// ISSUE(?): We're getting the len of channel `queue`; at the same time `standFillAndDistributeToRegisters` could read from it (and decrease the len)
+	// ISSUE: We're getting the len of channel `queue`; at the same time `standFillAndDistributeToRegisters` could read from it (and decrease the len)
+	// https://stackoverflow.com/a/42321398
 	bestValue := len(specificStands[0].queue)
 	if specificStands[0].isUsed {
 		bestValue++
@@ -42,53 +49,56 @@ func getBestIndex(specificStands []*standOrRegister) int {
 // Used as a single goroutine; distributes cars from sharedQueue `sq` to stands accroding to their fuel type
 func (sq *sharedQueue) distributeToStands(allStands map[int][]*standOrRegister) {
 	var bestIndex int
+	var c *car
 	var specificStands []*standOrRegister
-
 	for {
-		c := <-sq.queue
-		fmt.Println("Car", c, "enters the shared queue.")
+		c = <-sq.queue
+		//fmt.Println("Car id=", c.id, "enters the shared queue.")
 		specificStands = allStands[c.fuelType]
 		bestIndex = getBestIndex(specificStands)
-		fmt.Println("Car", c, "CHOOSES stand", specificStands[bestIndex])
+		//fmt.Println("Car id=", c.id, "CHOOSES stand", specificStands[bestIndex])
 		specificStands[bestIndex].queue <- c
-		fmt.Println("Car", c, "ENTERS stand", specificStands[bestIndex])
+		//fmt.Println("Car id=", c.id, "ENTERS stand", specificStands[bestIndex], "queue")
+		c.standQueueEnteredTime = time.Now()
 	}
 }
 
 // Used as goroutine for every stand; simulates refueling and after that sends cars to cash registers
 func (sor *standOrRegister) standFillAndDistributeToRegisters(registers []*standOrRegister) {
 	var bestIndex int
-
+	var c *car
 	for {
-		c := <-sor.queue
+		c = <-sor.queue
 		sor.isUsed = true
-		fmt.Println("Car", c, "REFUELING in stand", sor)
+		//fmt.Println("Car id=", c.id, "starts REFUELING in stand", sor)
 		randSleepExcl(sor.minTime, sor.maxTime)
-
+		c.refuelingFinishedTime = time.Now()
 		bestIndex = getBestIndex(registers)
-		fmt.Println("Car", c, "CHOOSES register with id=", bestIndex)
+		//fmt.Println("Car id=", c.id, "CHOOSES register id=", bestIndex)
 		registers[bestIndex].queue <- c
-		fmt.Println("Car", c, "ENTERS register with id=", bestIndex)
-
+		//fmt.Println("Car id=", c.id, "ENTERS register queue id=", bestIndex)
 		sor.isUsed = false
 	}
 }
 
 // Used as goroutine for every cash register; simulates paying and then makes cars leave the gas station
 func (sor *standOrRegister) registerCashoutAndLeave() {
+	var c *car
 	for {
-		c := <-sor.queue
+		c = <-sor.queue
 		sor.isUsed = true
-		fmt.Println("Car", c, "PAYING in register", sor)
+		//fmt.Println("Car id=", c.id, "starts PAYING in register", sor)
 		randSleepExcl(sor.minTime, sor.maxTime)
-		mainWG.Done()
-		fmt.Println("Car", c, "LEAVES register", sor)
+		//fmt.Println("Car id=", c.id, "LEAVES register", sor)
+		c.exitTime = time.Now()
+		go updateStats(c)
 		sor.isUsed = false
 	}
 }
 
 func main() {
-	fmt.Println("Hello gas station!")
+	fmt.Println("Hello gas station!\nSimulation started ...")
+	totalSimulationTime := time.Now()
 
 	// Read data from config.yaml to the conf variable
 	conf, err := readConfig("config.yaml")
@@ -133,10 +143,18 @@ func main() {
 	go sq.distributeToStands(allStands)
 
 	// Start spawning cars
-	mainWG.Add(nCars)
+	globalWG.Add(nCars)
 	go carSpawner(nCars, carsConf.ArrivalTimeMin, carsConf.ArrivalTimeMax, &sq)
-	mainWG.Wait()
+	globalWG.Wait() // Wait for all the cars to leave (also wait for stats update)
 
-	// Amen
-	fmt.Println("Simulation done.")
+	fmt.Println("Simulation ended, took", time.Since(totalSimulationTime))
+	finalizeStats() // set maximum values and compute average values
+
+	// Write stats to yaml
+	err = writeGlobalStats()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("Stats saved to 'output.yaml'\nBye!")
 }

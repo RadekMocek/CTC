@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -48,6 +49,7 @@ type gasStationConfig struct {
 	}
 }
 
+// https://github.com/go-yaml/yaml?tab=readme-ov-file#example
 func readConfig(filename string) (*gasStationConfig, error) {
 	buf, err := os.ReadFile(filename)
 	if err != nil {
@@ -61,4 +63,65 @@ func readConfig(filename string) (*gasStationConfig, error) {
 	}
 
 	return conf, err
+}
+
+type gasStationStats struct {
+	SharedQueue struct {
+		TotalCars int           `yaml:"total_cars"`
+		TotalTime time.Duration `yaml:"total_time"`
+		AvgTime   time.Duration `yaml:"avg_time"`
+		MaxTime   time.Duration `yaml:"max_time"`
+	}
+	Stations struct {
+		Gas struct {
+			TotalCars int           `yaml:"total_cars"`
+			TotalTime time.Duration `yaml:"total_time"`
+			AvgTime   time.Duration `yaml:"avg_time"`
+			MaxTime   time.Duration `yaml:"max_time"`
+		}
+		Diesel struct {
+			TotalCars int           `yaml:"total_cars"`
+			TotalTime time.Duration `yaml:"total_time"`
+			AvgTime   time.Duration `yaml:"avg_time"`
+			MaxTime   time.Duration `yaml:"max_time"`
+		}
+		LPG struct {
+			TotalCars int           `yaml:"total_cars"`
+			TotalTime time.Duration `yaml:"total_time"`
+			AvgTime   time.Duration `yaml:"avg_time"`
+			MaxTime   time.Duration `yaml:"max_time"`
+		}
+		Electric struct {
+			TotalCars int           `yaml:"total_cars"`
+			TotalTime time.Duration `yaml:"total_time"`
+			AvgTime   time.Duration `yaml:"avg_time"`
+			MaxTime   time.Duration `yaml:"max_time"`
+		}
+	}
+	Registers struct {
+		TotalCars int           `yaml:"total_cars"`
+		TotalTime time.Duration `yaml:"total_time"`
+		AvgTime   time.Duration `yaml:"avg_time"`
+		MaxTime   time.Duration `yaml:"max_time"`
+	}
+}
+
+// https://stackoverflow.com/a/65207714
+func writeGlobalStats() (returnValue error) {
+	file, err := os.OpenFile("output.yaml", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return fmt.Errorf("error opening/creating file: %v", err)
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			returnValue = fmt.Errorf("error closing file: %v", err)
+		}
+	}(file)
+	enc := yaml.NewEncoder(file)
+	err = enc.Encode(globalStats)
+	if err != nil {
+		return fmt.Errorf("error encoding: %v", err)
+	}
+	return nil
 }

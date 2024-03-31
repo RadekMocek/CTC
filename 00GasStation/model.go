@@ -1,5 +1,9 @@
 package main
 
+import (
+	"time"
+)
+
 const (
 	gas      = 0
 	diesel   = 1
@@ -10,6 +14,11 @@ const (
 type car struct {
 	id       int
 	fuelType int
+	// Stats
+	sharedQueueEnteredTime time.Time
+	standQueueEnteredTime  time.Time
+	refuelingFinishedTime  time.Time
+	exitTime               time.Time
 }
 
 type sharedQueue struct {
@@ -17,8 +26,7 @@ type sharedQueue struct {
 }
 
 type standOrRegister struct {
-	id int
-	//fuelType int
+	id      int
 	isUsed  bool
 	queue   chan *car
 	minTime int

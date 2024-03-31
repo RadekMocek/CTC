@@ -10,9 +10,15 @@
 1. After the car is served, it goes to the cash register
 1. Count of cash registers and their handle time is configurable
 1. After the car is handled (random time from register handle time range) by the cash register, it leaves the station
-1. Program collects statistics about the time spent in the queue, time spent at the station and time spent at the cash
-   register for every car
+1. Program collects statistics about the time spent in the queue, time spent at the station and time spent at the cash register for every car
 1. Program prints the aggregate statistics at the end of the simulation
+
+### Poznámky (temporary)
+
+* sharedQueue coto; vysvětlit fronty
+* input config je v ms
+* output stats sharedQueue time počítá pouze čas ve frontě
+  * stands a registers počítá čas ve frontě, čas tankování/placení __ale i čas čekání, než se do nějaké fronty auto vůbec dostane__ 
 
 ### Sample configuration
 
