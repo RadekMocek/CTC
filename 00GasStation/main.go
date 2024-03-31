@@ -12,8 +12,7 @@ func carSpawner(nCars int, minTime int, maxTime int, sq *sharedQueue) {
 	for i := 0; i < nCars; i++ {
 		randSleepExcl(minTime, maxTime)
 		fmt.Println("Car with id=", i, "wants to enter the shared queue.")
-		//sq.queue <- &car{i, randFuelType()}
-		sq.queue <- &car{i, gas}
+		sq.queue <- &car{i, randFuelType()}
 	}
 }
 
@@ -41,17 +40,14 @@ func getBestIndex(specificStands []*standOrRegister) int {
 }
 
 // Used as a single goroutine; distributes cars from sharedQueue `sq` to stands accroding to their fuel type
-func (sq *sharedQueue) distributeToStands(gasStands []*standOrRegister) {
+func (sq *sharedQueue) distributeToStands(allStands map[int][]*standOrRegister) {
 	var bestIndex int
 	var specificStands []*standOrRegister
 
 	for {
 		c := <-sq.queue
 		fmt.Println("Car", c, "enters the shared queue.")
-		switch c.fuelType {
-		case gas:
-			specificStands = gasStands
-		}
+		specificStands = allStands[c.fuelType]
 		bestIndex = getBestIndex(specificStands)
 		fmt.Println("Car", c, "CHOOSES stand", specificStands[bestIndex])
 		specificStands[bestIndex].queue <- c
@@ -101,32 +97,40 @@ func main() {
 		return
 	}
 
-	// Retrieve some repeatedly used values from the conf variable
-	carsConf := conf.Cars
-	nCars := carsConf.Count
-	gasConf := conf.Stations.Gas
-	nGasStands := gasConf.Count
-	registerConf := conf.Registers
-	nRegisters := registerConf.Count
-
 	// Simulation
 	// Make cash registers and start their goroutines that accept cars from stands and makes them leave the gas station after their payment is done
+	registerConf := conf.Registers
+	nRegisters := registerConf.Count
 	registers := make([]*standOrRegister, nRegisters)
 	for i := 0; i < nRegisters; i++ {
 		registers[i] = &standOrRegister{i, false, make(chan *car, registerConf.QueueLengthMax), registerConf.HandleTimeMin, registerConf.HandleTimeMax}
 		go registers[i].registerCashoutAndLeave()
 	}
 
-	// Make gasStands and start their goroutines that accept cars from sharedQueue, refuels them, and sends them to cash registers
-	gasStands := make([]*standOrRegister, nGasStands)
-	for i := 0; i < nGasStands; i++ {
-		gasStands[i] = &standOrRegister{(gas+1)*10 + i, false, make(chan *car, gasConf.QueueLengthMax), gasConf.ServeTimeMin, gasConf.ServeTimeMax}
-		go gasStands[i].standFillAndDistributeToRegisters(registers)
+	// Make allStands and start their goroutines that accept cars from sharedQueue, refuels them, and sends them to cash registers
+	var nSpecificStands int
+
+	fuelTypeConfs := map[int]standConfigRepresentation{
+		gas:      standConfigRepresentation(conf.Stations.Gas),
+		diesel:   standConfigRepresentation(conf.Stations.Diesel),
+		lpg:      standConfigRepresentation(conf.Stations.LPG),
+		electric: standConfigRepresentation(conf.Stations.Electric),
+	}
+	allStands := make(map[int][]*standOrRegister)
+	for key, value := range fuelTypeConfs {
+		nSpecificStands = value.Count
+		allStands[key] = make([]*standOrRegister, nSpecificStands)
+		for i := 0; i < nSpecificStands; i++ {
+			allStands[key][i] = &standOrRegister{(key+1)*10 + i, false, make(chan *car, value.QueueLengthMax), value.ServeTimeMin, value.ServeTimeMax}
+			go allStands[key][i].standFillAndDistributeToRegisters(registers)
+		}
 	}
 
 	// Make a sharedQueue and start a goroutine that sends cars to specific queues according to their fuel type
+	carsConf := conf.Cars
+	nCars := carsConf.Count
 	sq := sharedQueue{make(chan *car, carsConf.SharedQueueLengthMax)}
-	go sq.distributeToStands(gasStands)
+	go sq.distributeToStands(allStands)
 
 	// Start spawning cars
 	mainWG.Add(nCars)

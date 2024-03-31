@@ -24,3 +24,10 @@ type standOrRegister struct {
 	minTime int
 	maxTime int
 }
+
+type standConfigRepresentation struct {
+	Count          int
+	ServeTimeMin   int
+	ServeTimeMax   int
+	QueueLengthMax int
+}
