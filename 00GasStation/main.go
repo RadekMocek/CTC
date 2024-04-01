@@ -73,6 +73,7 @@ func (sor *standOrRegister) standFillAndDistributeToRegisters(registers []*stand
 		//fmt.Println("Car id=", c.id, "starts REFUELING in stand", sor)
 		randSleepExcl(sor.minTime, sor.maxTime)
 		c.refuelingFinishedTime = time.Now()
+		//fmt.Println("", time.Now(), "\n", c.refuelingFinishedTime, "\n") // ??? TODO
 		bestIndex = getBestIndex(registers)
 		//fmt.Println("Car id=", c.id, "CHOOSES register id=", bestIndex)
 		registers[bestIndex].queue <- c

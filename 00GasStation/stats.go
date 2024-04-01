@@ -22,7 +22,7 @@ func updateStats(c *car) {
 		timeSpentInSpecificQueueAndRefueling = 0
 	}
 	timeSpentInRegisterQueueAndPaying := c.exitTime.Sub(c.refuelingFinishedTime)
-	//fmt.Println(timeSpentInRegisterQueueAndPaying)
+	//fmt.Println(timeSpentInRegisterQueueAndPaying, c.exitTime, c.refuelingFinishedTime)
 	if timeSpentInRegisterQueueAndPaying < 0 {
 		timeSpentInRegisterQueueAndPaying = 0
 	}
@@ -78,10 +78,22 @@ func finalizeStats() {
 	globalStats.Stations.Electric.MaxTime = globalMaxSpecific[electric]
 	globalStats.Registers.MaxTime = globalMaxRegisters
 
-	globalStats.SharedQueue.AvgTime = globalStats.SharedQueue.TotalTime / time.Duration(globalStats.SharedQueue.TotalCars)
-	globalStats.Stations.Gas.AvgTime = globalStats.Stations.Gas.TotalTime / time.Duration(globalStats.Stations.Gas.TotalCars)
-	globalStats.Stations.Diesel.AvgTime = globalStats.Stations.Diesel.TotalTime / time.Duration(globalStats.Stations.Diesel.TotalCars)
-	globalStats.Stations.LPG.AvgTime = globalStats.Stations.LPG.TotalTime / time.Duration(globalStats.Stations.LPG.TotalCars)
-	globalStats.Stations.Electric.AvgTime = globalStats.Stations.Electric.TotalTime / time.Duration(globalStats.Stations.Electric.TotalCars)
-	globalStats.Registers.AvgTime = globalStats.Registers.TotalTime / time.Duration(globalStats.Registers.TotalCars)
+	if globalStats.SharedQueue.TotalCars > 0 {
+		globalStats.SharedQueue.AvgTime = globalStats.SharedQueue.TotalTime / time.Duration(globalStats.SharedQueue.TotalCars)
+	}
+	if globalStats.Stations.Gas.TotalCars > 0 {
+		globalStats.Stations.Gas.AvgTime = globalStats.Stations.Gas.TotalTime / time.Duration(globalStats.Stations.Gas.TotalCars)
+	}
+	if globalStats.Stations.Diesel.TotalCars > 0 {
+		globalStats.Stations.Diesel.AvgTime = globalStats.Stations.Diesel.TotalTime / time.Duration(globalStats.Stations.Diesel.TotalCars)
+	}
+	if globalStats.Stations.LPG.TotalCars > 0 {
+		globalStats.Stations.LPG.AvgTime = globalStats.Stations.LPG.TotalTime / time.Duration(globalStats.Stations.LPG.TotalCars)
+	}
+	if globalStats.Stations.Electric.TotalCars > 0 {
+		globalStats.Stations.Electric.AvgTime = globalStats.Stations.Electric.TotalTime / time.Duration(globalStats.Stations.Electric.TotalCars)
+	}
+	if globalStats.Registers.TotalCars > 0 {
+		globalStats.Registers.AvgTime = globalStats.Registers.TotalTime / time.Duration(globalStats.Registers.TotalCars)
+	}
 }
