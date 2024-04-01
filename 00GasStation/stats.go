@@ -13,57 +13,45 @@ var globalMaxSpecific = map[int]time.Duration{gas: 0, diesel: 0, lpg: 0, electri
 
 func updateStats(c *car) {
 	// Calculate durations
-	timeSpentInSharedQueue := c.standQueueEnteredTime.Sub(c.sharedQueueEnteredTime)
-	if timeSpentInSharedQueue < 0 { // Because of time imprecisions
-		timeSpentInSharedQueue = 0
-	}
-	timeSpentInSpecificQueueAndRefueling := c.refuelingFinishedTime.Sub(c.standQueueEnteredTime)
-	if timeSpentInSpecificQueueAndRefueling < 0 {
-		timeSpentInSpecificQueueAndRefueling = 0
-	}
-	timeSpentInRegisterQueueAndPaying := c.exitTime.Sub(c.refuelingFinishedTime)
-	//fmt.Println(timeSpentInRegisterQueueAndPaying, c.exitTime, c.refuelingFinishedTime)
-	if timeSpentInRegisterQueueAndPaying < 0 {
-		timeSpentInRegisterQueueAndPaying = 0
-	}
-	//fmt.Println(timeSpentInRegisterQueueAndPaying)
-	//fmt.Println()
+	timeSpentWaitingForAndInSharedQueue := c.waitForStandStarted.Sub(c.waitForSharedQueueStarted)
+	timeSpenWaitingForAndRefueling := c.waitForRegisterStarted.Sub(c.waitForStandStarted)
+	timeSpentWaitingForAndPaying := c.departureStarted.Sub(c.waitForRegisterStarted)
 
 	globalStatsLock.Lock()
 	// Update Totals
 	// - SharedQueue
 	globalStats.SharedQueue.TotalCars++
-	globalStats.SharedQueue.TotalTime += timeSpentInSharedQueue
+	globalStats.SharedQueue.TotalTime += timeSpentWaitingForAndInSharedQueue
 	// - SpecificQueue
 	switch c.fuelType {
 	case gas:
 		globalStats.Stations.Gas.TotalCars++
-		globalStats.Stations.Gas.TotalTime += timeSpentInSpecificQueueAndRefueling
+		globalStats.Stations.Gas.TotalTime += timeSpenWaitingForAndRefueling
 	case diesel:
 		globalStats.Stations.Diesel.TotalCars++
-		globalStats.Stations.Diesel.TotalTime += timeSpentInSpecificQueueAndRefueling
+		globalStats.Stations.Diesel.TotalTime += timeSpenWaitingForAndRefueling
 	case lpg:
 		globalStats.Stations.LPG.TotalCars++
-		globalStats.Stations.LPG.TotalTime += timeSpentInSpecificQueueAndRefueling
+		globalStats.Stations.LPG.TotalTime += timeSpenWaitingForAndRefueling
 	case electric:
 		globalStats.Stations.Electric.TotalCars++
-		globalStats.Stations.Electric.TotalTime += timeSpentInSpecificQueueAndRefueling
+		globalStats.Stations.Electric.TotalTime += timeSpenWaitingForAndRefueling
 	}
 	// - RegisterQueue
 	globalStats.Registers.TotalCars++
-	globalStats.Registers.TotalTime += timeSpentInRegisterQueueAndPaying
+	globalStats.Registers.TotalTime += timeSpentWaitingForAndPaying
 	// Update Maximums
 	// - SharedQueue
-	if timeSpentInSharedQueue > globalMaxShared {
-		globalMaxShared = timeSpentInSharedQueue
+	if timeSpentWaitingForAndInSharedQueue > globalMaxShared {
+		globalMaxShared = timeSpentWaitingForAndInSharedQueue
 	}
 	// - SpecificQueue
-	if timeSpentInSpecificQueueAndRefueling > globalMaxSpecific[c.fuelType] {
-		globalMaxSpecific[c.fuelType] = timeSpentInSpecificQueueAndRefueling
+	if timeSpenWaitingForAndRefueling > globalMaxSpecific[c.fuelType] {
+		globalMaxSpecific[c.fuelType] = timeSpenWaitingForAndRefueling
 	}
 	// - RegisterQueue
-	if timeSpentInRegisterQueueAndPaying > globalMaxRegisters {
-		globalMaxRegisters = timeSpentInRegisterQueueAndPaying
+	if timeSpentWaitingForAndPaying > globalMaxRegisters {
+		globalMaxRegisters = timeSpentWaitingForAndPaying
 	}
 	globalStatsLock.Unlock()
 

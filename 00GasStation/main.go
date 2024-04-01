@@ -16,9 +16,10 @@ func carSpawner(nCars int, minTime int, maxTime int, sq *sharedQueue) {
 		c = car{}
 		c.id = i
 		c.fuelType = randFuelType()
-		//fmt.Println("Car id=", c.id, "wants to enter the shared queue.")
+		// Car `c` was created and wants to enter the sharedQueue
+		c.waitForSharedQueueStarted = time.Now()
 		sq.queue <- c
-		c.sharedQueueEnteredTime = time.Now()
+		// Car `c` has entered the back of the sharedQueue
 	}
 }
 
@@ -53,13 +54,13 @@ func (sq *sharedQueue) distributeToStands(allStands map[int][]*standOrRegister) 
 	var specificStands []*standOrRegister
 	for {
 		c = <-sq.queue
-		//fmt.Println("Car id=", c.id, "enters the shared queue.")
-		specificStands = allStands[c.fuelType]
+		// Car `c` is at the front of the sharedQueue
+		specificStands = allStands[c.fuelType] // Look for stand that corresponds to car's fuel type
 		bestIndex = getBestIndex(specificStands)
-		//fmt.Println("Car id=", c.id, "CHOOSES stand", specificStands[bestIndex])
+		// Car `c` chooses stand with `bestIndex`
+		c.waitForStandStarted = time.Now()
 		specificStands[bestIndex].queue <- c
-		//fmt.Println("Car id=", c.id, "ENTERS stand", specificStands[bestIndex], "queue")
-		c.standQueueEnteredTime = time.Now()
+		// Car `c` has entered the back of the stand queue
 	}
 }
 
@@ -70,14 +71,13 @@ func (sor *standOrRegister) standFillAndDistributeToRegisters(registers []*stand
 	for {
 		c = <-sor.queue
 		sor.isUsed = true
-		//fmt.Println("Car id=", c.id, "starts REFUELING in stand", sor)
+		// Car `c` is at the front of the stand queue => It starts refueling
 		randSleepExcl(sor.minTime, sor.maxTime)
-		c.refuelingFinishedTime = time.Now()
-		//fmt.Println("", time.Now(), "\n", c.refuelingFinishedTime, "\n") // ??? TODO
 		bestIndex = getBestIndex(registers)
-		//fmt.Println("Car id=", c.id, "CHOOSES register id=", bestIndex)
+		// Car `c` chooses cash register with `bestIndex`
+		c.waitForRegisterStarted = time.Now()
 		registers[bestIndex].queue <- c
-		//fmt.Println("Car id=", c.id, "ENTERS register queue id=", bestIndex)
+		// Car `c` has entered the back of the cash register queue
 		sor.isUsed = false
 	}
 }
@@ -88,10 +88,10 @@ func (sor *standOrRegister) registerCashoutAndLeave() {
 	for {
 		c = <-sor.queue
 		sor.isUsed = true
-		//fmt.Println("Car id=", c.id, "starts PAYING in register", sor)
+		// Car `c` is at the front of the cash register queue => It starts paying
 		randSleepExcl(sor.minTime, sor.maxTime)
-		//fmt.Println("Car id=", c.id, "LEAVES register", sor)
-		c.exitTime = time.Now()
+		// Car `c` is leaving the gas station
+		c.departureStarted = time.Now()
 		go updateStats(&c)
 		sor.isUsed = false
 	}

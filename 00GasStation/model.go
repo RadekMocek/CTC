@@ -15,10 +15,10 @@ type car struct {
 	id       int
 	fuelType int
 	// Stats
-	sharedQueueEnteredTime time.Time
-	standQueueEnteredTime  time.Time
-	refuelingFinishedTime  time.Time
-	exitTime               time.Time
+	waitForSharedQueueStarted time.Time
+	waitForStandStarted       time.Time
+	waitForRegisterStarted    time.Time
+	departureStarted          time.Time
 }
 
 type sharedQueue struct {
