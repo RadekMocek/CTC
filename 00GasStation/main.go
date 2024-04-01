@@ -17,7 +17,7 @@ func carSpawner(nCars int, minTime int, maxTime int, sq *sharedQueue) {
 		c.id = i
 		c.fuelType = randFuelType()
 		//fmt.Println("Car id=", c.id, "wants to enter the shared queue.")
-		sq.queue <- &c
+		sq.queue <- c
 		c.sharedQueueEnteredTime = time.Now()
 	}
 }
@@ -49,7 +49,7 @@ func getBestIndex(specificStands []*standOrRegister) int {
 // Used as a single goroutine; distributes cars from sharedQueue `sq` to stands accroding to their fuel type
 func (sq *sharedQueue) distributeToStands(allStands map[int][]*standOrRegister) {
 	var bestIndex int
-	var c *car
+	var c car
 	var specificStands []*standOrRegister
 	for {
 		c = <-sq.queue
@@ -66,7 +66,7 @@ func (sq *sharedQueue) distributeToStands(allStands map[int][]*standOrRegister) 
 // Used as goroutine for every stand; simulates refueling and after that sends cars to cash registers
 func (sor *standOrRegister) standFillAndDistributeToRegisters(registers []*standOrRegister) {
 	var bestIndex int
-	var c *car
+	var c car
 	for {
 		c = <-sor.queue
 		sor.isUsed = true
@@ -84,7 +84,7 @@ func (sor *standOrRegister) standFillAndDistributeToRegisters(registers []*stand
 
 // Used as goroutine for every cash register; simulates paying and then makes cars leave the gas station
 func (sor *standOrRegister) registerCashoutAndLeave() {
-	var c *car
+	var c car
 	for {
 		c = <-sor.queue
 		sor.isUsed = true
@@ -92,7 +92,7 @@ func (sor *standOrRegister) registerCashoutAndLeave() {
 		randSleepExcl(sor.minTime, sor.maxTime)
 		//fmt.Println("Car id=", c.id, "LEAVES register", sor)
 		c.exitTime = time.Now()
-		go updateStats(c)
+		go updateStats(&c)
 		sor.isUsed = false
 	}
 }
@@ -114,7 +114,7 @@ func main() {
 	nRegisters := registerConf.Count
 	registers := make([]*standOrRegister, nRegisters)
 	for i := 0; i < nRegisters; i++ {
-		registers[i] = &standOrRegister{i, false, make(chan *car, registerConf.QueueLengthMax), registerConf.HandleTimeMin, registerConf.HandleTimeMax}
+		registers[i] = &standOrRegister{i, false, make(chan car, registerConf.QueueLengthMax), registerConf.HandleTimeMin, registerConf.HandleTimeMax}
 		go registers[i].registerCashoutAndLeave()
 	}
 
@@ -132,7 +132,7 @@ func main() {
 		nSpecificStands = value.Count
 		allStands[key] = make([]*standOrRegister, nSpecificStands)
 		for i := 0; i < nSpecificStands; i++ {
-			allStands[key][i] = &standOrRegister{(key+1)*10 + i, false, make(chan *car, value.QueueLengthMax), value.ServeTimeMin, value.ServeTimeMax}
+			allStands[key][i] = &standOrRegister{(key+1)*10 + i, false, make(chan car, value.QueueLengthMax), value.ServeTimeMin, value.ServeTimeMax}
 			go allStands[key][i].standFillAndDistributeToRegisters(registers)
 		}
 	}
@@ -140,7 +140,7 @@ func main() {
 	// Make a sharedQueue and start a goroutine that sends cars to specific queues according to their fuel type
 	carsConf := conf.Cars
 	nCars := carsConf.Count
-	sq := sharedQueue{make(chan *car, carsConf.SharedQueueLengthMax)}
+	sq := sharedQueue{make(chan car, carsConf.SharedQueueLengthMax)}
 	go sq.distributeToStands(allStands)
 
 	// Start spawning cars

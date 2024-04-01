@@ -22,13 +22,13 @@ type car struct {
 }
 
 type sharedQueue struct {
-	queue chan *car
+	queue chan car
 }
 
 type standOrRegister struct {
 	id      int
 	isUsed  bool
-	queue   chan *car
+	queue   chan car
 	minTime int
 	maxTime int
 }
