@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 )
@@ -92,7 +93,7 @@ func (sor *standOrRegister) registerCashoutAndLeave() {
 		randSleepExcl(sor.minTime, sor.maxTime)
 		// Car `c` is leaving the gas station
 		c.departureStarted = time.Now()
-		go updateStats(&c)
+		go updateStats(c)
 		sor.isUsed = false
 	}
 }
@@ -150,6 +151,13 @@ func main() {
 
 	fmt.Println("Simulation ended, took", time.Since(totalSimulationTime))
 	finalizeStats() // set maximum values and compute average values
+
+	// Print stats to terminal
+	toPrint := fmt.Sprintf("%+v\n", globalStats)
+	toPrint = strings.Replace(toPrint, " ", "\n", -1)
+	toPrint = strings.Replace(toPrint, ":{", ":{\n", -1)
+	toPrint = strings.Replace(toPrint, "}", "}\n", -1)
+	fmt.Println(toPrint)
 
 	// Write stats to yaml
 	err = writeGlobalStats()

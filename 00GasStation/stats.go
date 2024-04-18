@@ -11,7 +11,7 @@ var globalStats gasStationStats
 var globalMaxShared, globalMaxRegisters time.Duration = 0, 0
 var globalMaxSpecific = map[int]time.Duration{gas: 0, diesel: 0, lpg: 0, electric: 0}
 
-func updateStats(c *car) {
+func updateStats(c car) {
 	// Calculate durations
 	timeSpentWaitingForAndInSharedQueue := c.waitForStandStarted.Sub(c.waitForSharedQueueStarted)
 	timeSpenWaitingForAndRefueling := c.waitForRegisterStarted.Sub(c.waitForStandStarted)
