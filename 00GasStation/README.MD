@@ -68,33 +68,33 @@ registers:
 ```yaml
 sharedqueue:
     total_cars: 1000
-    total_time: 105.6µs
-    avg_time: 105ns
-    max_time: 63.9µs
+    total_time: 3.3212462s
+    avg_time: 3.321246ms
+    max_time: 34.5618ms
 stations:
     gas:
-        total_cars: 273
-        total_time: 4.2492077s
-        avg_time: 15.564863ms
-        max_time: 16.1471ms
-    diesel:
         total_cars: 253
-        total_time: 3.927832s
-        avg_time: 15.525027ms
-        max_time: 16.1233ms
+        total_time: 1.1286974s
+        avg_time: 4.461254ms
+        max_time: 12.0926ms
+    diesel:
+        total_cars: 262
+        total_time: 1.6177236s
+        avg_time: 6.174517ms
+        max_time: 14.2753ms
     lpg:
-        total_cars: 234
-        total_time: 3.6457938s
-        avg_time: 15.580315ms
-        max_time: 16.1354ms
+        total_cars: 245
+        total_time: 3.7838135s
+        avg_time: 15.444136ms
+        max_time: 33.9157ms
     electric:
         total_cars: 240
-        total_time: 3.7343759s
-        avg_time: 15.559899ms
-        max_time: 16.1336ms
+        total_time: 7.1340282s
+        avg_time: 29.725117ms
+        max_time: 47.3687ms
 registers:
     total_cars: 1000
-    total_time: 15.5572461s
-    avg_time: 15.557246ms
-    max_time: 16.1471ms
+    total_time: 2.8851533s
+    avg_time: 2.885153ms
+    max_time: 9.7887ms
 ```
